@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 gtk4 = {version = "0.11.3", features = ["gnome_50"]}
 gtk4-layer-shell = "0.8.0"
-kdl = {version = "6.5.0", default-features = false, features=["span"]}
+kdlite = "0.1.1"
 smallvec = {version = "1.15.1", default-features = false, features = ["union"]}
 
 [profile.release]

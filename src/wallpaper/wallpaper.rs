@@ -36,7 +36,6 @@ impl WallpaperConfig {
 
         self.window.set_exclusive_zone(-1);
 
-
         let bytes = Self::get_wallpaper();
 
         if let Ok(texture) = Texture::from_bytes(&bytes) {
