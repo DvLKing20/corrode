@@ -12,7 +12,7 @@ impl<'a> CorrodeNodes<'a> {
         let mut bar = None;
 
         let Some(content) = content else {
-            return Self { bar }
+            return Self { bar };
         };
 
         let doc = match kdlite::dom::Document::parse(content) {
@@ -43,7 +43,7 @@ impl<'a> CorrodeNodes<'a> {
         };
 
         let mut config_path: PathBuf = PathBuf::from(home);
-        config_path.push(".config/Corrode");
+        config_path.push(".config/corrode");
 
         if !config_path.exists() {
             let Ok(_) = fs::create_dir_all(&config_path) else {
@@ -56,7 +56,7 @@ impl<'a> CorrodeNodes<'a> {
 
         if !config_path.exists() {
             let default_config = r#"
-bar class-name = "corrode-bar" {
+bar class-name "corrode-bar" {
     Width -1
     Height 30
     Exclusive 30

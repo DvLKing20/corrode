@@ -12,6 +12,13 @@ macro_rules! log_error {
     }};
 }
 
+const EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "webp", "bmp", "tiff", "svg"];
+
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 pub mod bar;
 pub mod config;
 pub mod wallpaper;

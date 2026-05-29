@@ -1,11 +1,12 @@
-ususe gtk4_layer_shell::{Edge, Layer};
+use crate::config::helpers::{float, int, str};
+use gtk4_layer_shell::{Edge, Layer};
 use kdlite::dom::Node;
 use std::iter::Peekable;
 use std::slice::Iter;
 
 pub struct BarConfig {
-    pub width: i64,
-    pub height: i64,
+    pub width: i32,
+    pub height: i32,
     pub exclusive_zone: i32,
     pub opacity: f64,
     pub anchors: [Edge; 3],
@@ -29,18 +30,15 @@ impl Default for BarConfig {
 impl BarConfig {
     pub fn new(stream: &mut Peekable<Iter<'_, Node<'_>>>) -> Self {
         let mut config = Self::default();
+        Self::parse(stream, &mut config);
+        config
+    }
 
-        while let Some(node) = stream.peek() {
+    pub fn parse(stream: &mut Peekable<Iter<'_, Node<'_>>>, config: &mut BarConfig) {
+        while let Some(node) = stream.next_if(|n| is_bar_property(n.name())) {
             match node.name() {
                 "Position" => {
-                    let mut pos = "top";
-                    if let Some(entry) = node.entries.first() {
-                        if let kdlite::dom::Value::String(std::borrow::Cow::Borrowed(raw_str)) =
-                            entry.value
-                        {
-                            pos = raw_str
-                        }
-                    }
+                    let Some(pos) = str(node) else { continue };
                     match pos {
                         "top" => config.anchors = [Edge::Top, Edge::Left, Edge::Right],
                         "bottom" => config.anchors = [Edge::Bottom, Edge::Left, Edge::Right],
@@ -48,156 +46,47 @@ impl BarConfig {
                         "right" => config.anchors = [Edge::Right, Edge::Top, Edge::Bottom],
                         _ => {}
                     }
-                    stream.next();
                 }
 
                 "Opacity" => {
-                    if let Some(entry) = node.entries.first() {
-                        if let kdlite::dom::Value::Float(v) = entry.value {
-                            config.opacity = v
-                        }
-                    }
-                    stream.next();
+                    let Some(v) = float(node) else { continue };
+                    config.opacity = v
                 }
 
                 "Exclusive" => {
-                    if let Some(entry) = node.entries.first() {
-                        if let kdlite::dom::Value::Integer(v) = entry.value {
-                            config.exclusive_zone = v as i32;
-                        }
-                    }
-                    stream.next();
+                    let Some(v) = int(node) else { continue };
+                    config.exclusive_zone = v as i32
                 }
 
                 "Layer" => {
-                    let mut pos = "top";
-                    if let Some(entry) = node.entries.first() && 
-                        let kdlite::dom::Value::String(std::borrow::Cow::Borrowed(raw_str)) = entry.value
-                        {
-                            pos = raw_str
-                        }
-
+                    let Some(pos) = str(node) else { continue };
                     match pos {
                         "top" => config.layer = Layer::Top,
                         "bottom" => config.layer = Layer::Bottom,
                         _ => {}
                     }
-
-                    stream.next();
                 }
 
                 "Width" => {
-                    if let Some(entry) = node.entries.first()
-                        && let kdlite::dom::Value::Integer(v) = entry.value
-                    {
-                        config.width = v as i64;
-                    }
+                    let Some(v) = int(node) else { continue };
+                    config.width = v as i32
+                }
+
+                "Height" => {
+                    let Some(v) = int(node) else { continue };
+                    config.height = v as i32
                 }
 
                 _ => break,
             }
         }
-        config
-    }
-}e gtk4_layer_shell::{Edge, Layer};
-use kdlite::dom::Node;
-use std::iter::Peekable;
-use std::slice::Iter;
-
-pub struct BarConfig {
-    pub width: i64,
-    pub height: i64,
-    pub exclusive_zone: i32,
-    pub opacity: f64,
-    pub anchors: [Edge; 3],
-    pub layer: Layer,
-}
-
-impl Default for BarConfig {
-    fn default() -> Self {
-        let anchors = [Edge::Top, Edge::Left, Edge::Right];
-        Self {
-            width: -1,
-            height: 30,
-            exclusive_zone: 30,
-            opacity: 0.85,
-            anchors,
-            layer: Layer::Top,
-        }
     }
 }
 
-impl BarConfig {
-    pub fn new(stream: &mut Peekable<Iter<'_, Node<'_>>>) -> Self {
-        let mut config = Self::default();
-
-        while let Some(node) = stream.peek() {
-            match node.name() {
-                "Position" => {
-                    let mut pos = "top";
-                    if let Some(entry) = node.entries.first() {
-                        if let kdlite::dom::Value::String(std::borrow::Cow::Borrowed(raw_str)) =
-                            entry.value
-                        {
-                            pos = raw_str
-                        }
-                    }
-                    match pos {
-                        "top" => config.anchors = [Edge::Top, Edge::Left, Edge::Right],
-                        "bottom" => config.anchors = [Edge::Bottom, Edge::Left, Edge::Right],
-                        "left" => config.anchors = [Edge::Left, Edge::Top, Edge::Bottom],
-                        "right" => config.anchors = [Edge::Right, Edge::Top, Edge::Bottom],
-                        _ => {}
-                    }
-                    stream.next();
-                }
-
-                "Opacity" => {
-                    if let Some(entry) = node.entries.first() {
-                        if let kdlite::dom::Value::Float(v) = entry.value {
-                            config.opacity = v
-                        }
-                    }
-                    stream.next();
-                }
-
-                "Exclusive" => {
-                    if let Some(entry) = node.entries.first() {
-                        if let kdlite::dom::Value::Integer(v) = entry.value {
-                            config.exclusive_zone = v as i32;
-                        }
-                    }
-                    stream.next();
-                }
-
-                "Layer" => {
-                    let mut pos = "top";
-                    if let Some(entry) = node.entries.first() && 
-                        let kdlite::dom::Value::String(std::borrow::Cow::Borrowed(raw_str)) = entry.value
-                        {
-                            pos = raw_str
-                        }
-
-                    match pos {
-                        "top" => config.layer = Layer::Top,
-                        "bottom" => config.layer = Layer::Bottom,
-                        _ => {}
-                    }
-
-                    stream.next();
-                }
-
-                "Width" => {
-                    if let Some(entry) = node.entries.first()
-                        && let kdlite::dom::Value::Integer(v) = entry.value
-                    {
-                        config.width = v as i64;
-                    }
-                }
-
-                _ => break,
-            }
-        }
-        config
-    }
+#[inline]
+fn is_bar_property(name: &str) -> bool {
+    matches!(
+        name,
+        "Position" | "Opacity" | "Exclusive" | "Layer" | "Width" | "height"
+    )
 }

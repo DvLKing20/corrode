@@ -1,73 +1,88 @@
-use gtk4::{
-    ApplicationWindow,Picture,
-    gdk::{
-        Texture,
-        prelude::{DisplayExt, MonitorExt},
-    },
-    gio::prelude::ListModelExt,
-    glib::object::Cast,
-    prelude::{GtkWindowExt, WidgetExt},
-};
-use gtk4_layer_shell::{Edge, Layer, LayerShell};
+use crate::EXTENSIONS;
+use gtk4::{Picture, gio};
+use smallvec::SmallVec;
+use std::{ffi::OsStr, path::PathBuf};
 
 pub struct WallpaperConfig {
-    window: ApplicationWindow,
     wallpaper: Picture,
+    files: SmallVec<[gio::File; 8]>,
+    index: usize,
 }
 
 impl WallpaperConfig {
-    pub fn new(app: &gtk4::Application) -> Self {
-        let window = ApplicationWindow::builder().application(app).build();
-
+    pub fn new() -> Option<Self> {
         let wallpaper = Picture::new();
-        Self { window, wallpaper }
+        let files = Self::get_wallpaper()?;
+        let index = 0;
+
+        Some(Self {
+            wallpaper,
+            files,
+            index,
+        })
     }
 
-    pub fn init(&self) {
-        self.window.init_layer_shell();
-        self.window.set_layer(Layer::Background);
-        self.window.set_anchor(Edge::Top, true);
-        self.window.set_anchor(Edge::Bottom, true);
-        self.window.set_anchor(Edge::Right, true);
-        self.window.set_anchor(Edge::Left, true);
+    pub fn next(&mut self) -> Option<&gio::File> {
+        if self.files.is_empty() {
+            log_warn!("There Was No Wallpapers Or the Dir was Empty");
+            return None;
+        };
 
-        self.window
-            .set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None);
+        self.index = (self.index + 1) % self.files.len();
+        Some(&self.files[self.index])
+    }
 
-        self.window.set_exclusive_zone(-1);
+    pub fn prev(&mut self) -> Option<&gio::File> {
+        if self.files.is_empty() {
+            return None;
+        };
 
-        let bytes = Self::get_wallpaper();
+        self.index = (self.index + self.files.len()) % self.files.len();
+        Some(&self.files[self.index])
+    }
 
-        if let Ok(texture) = Texture::from_bytes(&bytes) {
-           self.wallpaper.set_paintable(Some(&texture));
+    pub fn get_wallpaper() -> Option<SmallVec<[gio::File; 8]>> {
+        let mut vec: SmallVec<[gio::File; 8]> = SmallVec::new();
+
+        let pictures_path = std::env::var("XDG_PICTURES_DIR")
+            .map_err(|_| log_warn!("XDG_PICTURES_DIR missing, trying $HOME..."))
+            .or_else(|_| std::env::var("HOME").map_err(|_| log_error!("$HOME also missing!")))
+            .map(|p| PathBuf::from(p).join("Pictures/wallpapers"))
+            .ok()?;
+
+        let entries = match pictures_path.read_dir() {
+            Ok(v) => v,
+            Err(e) => {
+                log_error!("{:?}", e);
+                return None;
+            }
+        };
+
+        for entry in entries {
+            let entry = match entry {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+
+            let Ok(file) = entry.file_type() else {
+                continue;
+            };
+
+            if file.is_file() {
+                let img_path = entry.path();
+                let img = img_path
+                    .extension()
+                    .and_then(OsStr::to_str)
+                    .map(|ext| EXTENSIONS.iter().any(|e| ext.eq_ignore_ascii_case(e)))
+                    .unwrap_or(false);
+
+                if img {
+                    let file = gio::File::for_path(entry.path());
+                    vec.push(file);
+                }
+            };
         }
 
-        self.wallpaper.set_content_fit(gtk4::ContentFit::Cover);
-        self.wallpaper.set_overflow(gtk4::Overflow::Hidden);
-        self.window.set_child(Some(&self.wallpaper));
-        self.window.present();
-    }
-
-    fn get_geometry(&self) -> (i32, i32) {
-        let display =
-            gtk4::gdk::Display::default().expect("Couldnt find a valid monitor or display !");
-        let monitors = display.monitors();
-        if let Some(monitor) = monitors
-            .item(0)
-            .and_then(|m| m.downcast::<gtk4::gdk::Monitor>().ok())
-        {
-            let geometry = monitor.geometry();
-            let screen_width = geometry.width();
-            let screen_height = geometry.height();
-
-            (screen_width, screen_height)
-        } else {
-            (1920, 1080)
-        }
-    }
-
-    fn get_wallpaper() -> gtk4::glib::Bytes {
-        let bytes = std::fs::read("/home/kaif/wallpaper.png").expect("Failed to read wallpaper file");
-        gtk4::glib::Bytes::from(&bytes)
+        Some(vec)
     }
 }
