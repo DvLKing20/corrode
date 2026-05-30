@@ -87,6 +87,6 @@ impl BarConfig {
 fn is_bar_property(name: &str) -> bool {
     matches!(
         name,
-        "Position" | "Opacity" | "Exclusive" | "Layer" | "Width" | "height"
+        "Position" | "Opacity" | "Exclusive" | "Layer" | "Width" | "Height"
     )
 }

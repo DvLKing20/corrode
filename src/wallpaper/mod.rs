@@ -1,3 +1,3 @@
-pub mod core;
-pub mod wallpaper;
-pub mod ui;
+pub mod background;
+pub mod gallery;
+pub mod picker;

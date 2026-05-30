@@ -1,44 +1,49 @@
 use crate::EXTENSIONS;
+    
 use gtk4::{Picture, gio};
 use smallvec::SmallVec;
 use std::{ffi::OsStr, path::PathBuf};
 
-pub struct WallpaperConfig {
+pub struct Gallery {
     wallpaper: Picture,
-    files: SmallVec<[gio::File; 8]>,
+    files: Option<SmallVec<[gio::File; 8]>>,
     index: usize,
 }
 
-impl WallpaperConfig {
-    pub fn new() -> Option<Self> {
+impl Gallery {
+    pub fn new() -> Self {
         let wallpaper = Picture::new();
-        let files = Self::get_wallpaper()?;
+        let files = Self::get_wallpaper();
         let index = 0;
 
-        Some(Self {
+        Self {
             wallpaper,
             files,
             index,
-        })
+        }
     }
 
     pub fn next(&mut self) -> Option<&gio::File> {
-        if self.files.is_empty() {
+        let files = self.files.as_ref()?;
+
+        if files.is_empty() {
             log_warn!("There Was No Wallpapers Or the Dir was Empty");
             return None;
         };
 
-        self.index = (self.index + 1) % self.files.len();
-        Some(&self.files[self.index])
+        self.index = (self.index + 1) % files.len();
+        Some(&files[self.index])
     }
 
     pub fn prev(&mut self) -> Option<&gio::File> {
-        if self.files.is_empty() {
+        let files = self.files.as_ref()?;
+
+        if files.is_empty() {
             return None;
         };
 
-        self.index = (self.index + self.files.len()) % self.files.len();
-        Some(&self.files[self.index])
+        self.index = (self.index + files.len() - 1) % files.len();
+        Some(&files[self.index])
     }
 
     pub fn get_wallpaper() -> Option<SmallVec<[gio::File; 8]>> {

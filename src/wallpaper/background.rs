@@ -1,25 +1,16 @@
-use gtk4::prelude::GtkWindowExt;
-use gtk4_layer_shell::{LayerShell, Layer, Edge};
-
-use crate::wallpaper::ui::UiConfig;
 use crate::wallpaper::wallpaper::WallpaperConfig;
+use gtk4::{Picture, prelude::GtkWindowExt, gio};
+use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-struct Core {
+struct Wallpaper {
+    wallpaper: Picture,
     window: gtk4::ApplicationWindow,
-    wallpaper: WallpaperConfig,
-    ui: UiConfig,
 }
 
-impl Core {
-    pub fn new(app: &gtk4::Application) -> Self {
+impl Wallpaper {
+    pub fn new(app: &gtk4::Application, wallpaper: &gio::File) -> Self {
         let window = gtk4::ApplicationWindow::new(app);
-        let wallpaper = WallpaperConfig::new();
-        let ui = UiConfig::new();
-        Self {
-            window,
-            wallpaper,
-            ui
-        }
+        Self { window, wallpaper }
     }
 
     pub fn init(&self) {

@@ -50,7 +50,7 @@ impl<'a> Core<'a> {
             self.window.set_anchor(anchor, true);
         }
         self.window.add_css_class(self.class_name);
-        self.window.set_default_size(self.config.width, self.config.exclusive_zone);
+        self.window.set_default_size(self.config.width, self.config.height);
         self.window.set_opacity(self.config.opacity);
         self.window.set_exclusive_zone(self.config.exclusive_zone);
 
