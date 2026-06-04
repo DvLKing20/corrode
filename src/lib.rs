@@ -21,5 +21,4 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 pub mod bar;
 pub mod config;
-pub mod monitors;
 pub mod wallpaper;

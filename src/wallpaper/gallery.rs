@@ -1,29 +1,22 @@
 use crate::EXTENSIONS;
-    
-use gtk4::{Picture, gio};
+use gtk4::gio;
 use smallvec::SmallVec;
-use std::{ffi::OsStr, path::PathBuf};
+use std::{cell::Cell, ffi::OsStr, path::PathBuf};
 
 pub struct Gallery {
-    wallpaper: Picture,
     files: Option<SmallVec<[gio::File; 8]>>,
-    index: usize,
+    index: Cell<usize>,
 }
 
 impl Gallery {
     pub fn new() -> Self {
-        let wallpaper = Picture::new();
         let files = Self::get_wallpaper();
-        let index = 0;
+        let index = Cell::new(0);
 
-        Self {
-            wallpaper,
-            files,
-            index,
-        }
+        Self { files, index }
     }
 
-    pub fn next(&mut self) -> Option<&gio::File> {
+    pub fn next(&self) -> Option<&gio::File> {
         let files = self.files.as_ref()?;
 
         if files.is_empty() {
@@ -31,19 +24,19 @@ impl Gallery {
             return None;
         };
 
-        self.index = (self.index + 1) % files.len();
-        Some(&files[self.index])
+        self.index.set((self.index.get() + 1) % files.len());
+        Some(&files[self.index.get()])
     }
 
-    pub fn prev(&mut self) -> Option<&gio::File> {
+    pub fn prev(&self) -> Option<&gio::File> {
         let files = self.files.as_ref()?;
 
         if files.is_empty() {
             return None;
         };
 
-        self.index = (self.index + files.len() - 1) % files.len();
-        Some(&files[self.index])
+        self.index.set((self.index.get() + files.len() - 1) % files.len());
+        Some(&files[self.index.get()])
     }
 
     pub fn get_wallpaper() -> Option<SmallVec<[gio::File; 8]>> {
